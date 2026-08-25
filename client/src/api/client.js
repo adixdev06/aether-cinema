@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: 'https://aether-cinema.onrender.com/api',
   timeout: 12000,
   headers: {
     'Content-Type': 'application/json'
