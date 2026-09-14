@@ -77,6 +77,43 @@ export const authController = {
     }
   },
 
+  async googleLogin(req, res) {
+    try {
+      const { email, name, avatar, googleId } = req.body;
+      if (!email) {
+        return res.status(400).json({ success: false, message: 'Google authentication requires email.' });
+      }
+
+      let user = memoryDb.findOne('users', { email: email.toLowerCase() });
+      if (!user) {
+        const username = name || email.split('@')[0];
+        user = memoryDb.insert('users', {
+          username,
+          email: email.toLowerCase(),
+          googleId: googleId || `g_${Date.now()}`,
+          avatar: avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`,
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      const token = signToken({ id: user._id, username: user.username, email: user.email, isGoogle: true });
+
+      res.json({
+        success: true,
+        token,
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          avatar: user.avatar,
+          isGoogle: true
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
   async guest(req, res) {
     const guestId = 'guest_' + Math.random().toString(36).substr(2, 9);
     const token = signToken({ id: guestId, username: 'Cinematic Explorer', isGuest: true });

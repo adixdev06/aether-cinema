@@ -1,6 +1,6 @@
 import { ALL_MEDIA } from '../data/curatedMedia.js';
 import { memoryDb } from '../config/db.js';
-import { buildUserTasteVector, getRecommendations } from '../services/recommendationService.js';
+import { buildUserTasteVector, getRecommendations, getGenreHubRecommendations } from '../services/recommendationService.js';
 
 export const recController = {
   getPersonalizedFeeds(req, res) {
@@ -11,18 +11,19 @@ export const recController = {
 
     const userTaste = buildUserTasteVector(watched, ratings);
 
-    // 1. Picked For You (Overall taste vector match)
+    // 1. Picked For You (Overall taste vector match with diversity)
     const pickedForYou = getRecommendations({
       userTaste,
       userWatchedIds: watchedIds,
       limit: 10
     });
 
-    // 2. Hidden Gems (Acclaimed, slightly less voted or indie gems)
+    // 2. Hidden Gems & Underrated Masterworks
     const hiddenGems = getRecommendations({
       targetMediaList: ALL_MEDIA.filter(m => (m.vote_count || 10000) <= 20000 || (m.mood_tags || []).includes('underrated-gems')),
       userTaste,
       userWatchedIds: watchedIds,
+      includeUnderrated: true,
       limit: 10
     });
 
@@ -42,7 +43,6 @@ export const recController = {
       }
     }
 
-    // Fallback if no watched items yet: Anchor to Inception or Dune
     if (!becauseYouLoved) {
       const defaultRef = ALL_MEDIA[0]; // Inception
       anchorTitle = defaultRef.title || defaultRef.name;
@@ -76,6 +76,40 @@ export const recController = {
         },
         unwatchedMasterpieces
       }
+    });
+  },
+
+  getShuffleFeed(req, res) {
+    const userId = req.user?.id;
+    const watched = userId ? memoryDb.find('watched', { userId }) : [];
+    const ratings = userId ? memoryDb.find('ratings', { userId }) : [];
+    const watchedIds = watched.map(w => String(w.mediaId));
+    const userTaste = buildUserTasteVector(watched, ratings);
+
+    const shuffled = getRecommendations({
+      userTaste,
+      userWatchedIds: watchedIds,
+      shuffleJitter: true,
+      includeUnderrated: true,
+      limit: 12
+    });
+
+    res.json({
+      success: true,
+      results: shuffled
+    });
+  },
+
+  getGenreHub(req, res) {
+    const userId = req.user?.id;
+    const watched = userId ? memoryDb.find('watched', { userId }) : [];
+    const watchedIds = watched.map(w => String(w.mediaId));
+
+    const genreSections = getGenreHubRecommendations(watchedIds);
+
+    res.json({
+      success: true,
+      genres: genreSections
     });
   },
 

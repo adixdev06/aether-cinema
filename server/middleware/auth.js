@@ -9,7 +9,6 @@ export function signToken(payload) {
 export function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    // Check if client provided guest ID in header
     const guestId = req.headers['x-guest-id'] || 'guest_default';
     req.user = { id: guestId, isGuest: true, username: 'Cinematic Explorer' };
     return next();
@@ -21,8 +20,10 @@ export function authMiddleware(req, res, next) {
     req.user = decoded;
     next();
   } catch (error) {
-    // fallback to guest rather than crashing
     req.user = { id: 'guest_default', isGuest: true, username: 'Cinematic Explorer' };
     next();
   }
 }
+
+export const authenticate = authMiddleware;
+export const authenticateOptional = authMiddleware;

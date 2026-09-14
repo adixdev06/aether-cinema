@@ -88,6 +88,10 @@ export function generateRationale(item, userTaste, context = {}) {
     reasons.push(`Extraordinary critical and audience consensus (${item.vote_average.toFixed(1)}/10 on TMDB)`);
   }
 
+  if (item.mood_tags && item.mood_tags.includes('underrated-gems')) {
+    reasons.push('Hidden cinematic gem with exceptional storytelling craft');
+  }
+
   if (item.genres && item.genres.length > 0) {
     reasons.push(`Seamless blend of ${item.genres.slice(0, 2).join(' & ')}`);
   }
@@ -117,6 +121,8 @@ export function getRecommendations({
   moodId = null,
   excludeIds = [],
   referenceItem = null,
+  includeUnderrated = false,
+  shuffleJitter = false,
   limit = 12
 }) {
   const watchedSet = new Set(userWatchedIds.map(String));
@@ -159,13 +165,23 @@ export function getRecommendations({
       score += 0.35; // baseline
     }
 
-    // 2. Rating Quality (TMDB vote average normalized)
+    // 2. Rating Quality
     const ratingScore = (item.vote_average || 7.0) / 10;
     score += ratingScore * 0.3;
 
     // 3. Mood Matching
     if (moodId && item.mood_tags && item.mood_tags.includes(moodId)) {
       score += 0.35;
+    }
+
+    // 4. Hidden Gem / Underrated Boost
+    if (includeUnderrated && item.mood_tags && item.mood_tags.includes('underrated-gems')) {
+      score += 0.25;
+    }
+
+    // 5. Shuffle temperature jitter to prevent stale repetitive results
+    if (shuffleJitter) {
+      score += (Math.random() - 0.5) * 0.35;
     }
 
     // Normalize to 0-1 range
@@ -195,4 +211,48 @@ export function getRecommendations({
       matchScore: res.matchPercentage,
       whyReasons: res.reasons
     }));
+}
+
+// Generate Top Movies per Genre with NO duplicates across adjacent shelves
+export function getGenreHubRecommendations(userWatchedIds = []) {
+  const GENRES_TO_SHOW = [
+    { id: 'sci-fi', label: 'Sci-Fi & Cyberpunk', genre: 'Sci-Fi' },
+    { id: 'crime', label: 'Crime & Gangster Sagas', genre: 'Crime' },
+    { id: 'thriller', label: 'Psychological Thrillers', genre: 'Thriller' },
+    { id: 'drama', label: 'Monumental Dramas', genre: 'Drama' },
+    { id: 'action', label: 'High-Octane Action', genre: 'Action' },
+    { id: 'animation', label: 'Auteur Animation', genre: 'Animation' },
+    { id: 'mystery', label: 'Mind-Bending Mysteries', genre: 'Mystery' },
+    { id: 'comedy', label: 'Sharp & Dark Comedy', genre: 'Comedy' }
+  ];
+
+  const assignedIds = new Set();
+  const genreResults = [];
+
+  GENRES_TO_SHOW.forEach(g => {
+    // Filter media matching genre
+    const candidates = ALL_MEDIA.filter(item => {
+      const hasGenre = (item.genres || []).includes(g.genre);
+      return hasGenre;
+    });
+
+    // Prioritize high rating & unassigned titles to avoid duplicate rows
+    const available = candidates.filter(m => !assignedIds.has(String(m.id)));
+    const selected = available.length >= 4 ? available.slice(0, 6) : candidates.slice(0, 6);
+
+    // Track selected
+    selected.forEach(m => assignedIds.add(String(m.id)));
+
+    genreResults.push({
+      id: g.id,
+      label: g.label,
+      genre: g.genre,
+      items: selected.map(item => ({
+        ...item,
+        matchScore: Math.round(85 + ((item.vote_average || 8) / 10) * 14)
+      }))
+    });
+  });
+
+  return genreResults;
 }

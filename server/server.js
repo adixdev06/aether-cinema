@@ -10,6 +10,7 @@ import discoveryRoutes from './routes/discoveryRoutes.js';
 import recRoutes from './routes/recRoutes.js';
 import libraryRoutes from './routes/libraryRoutes.js';
 import dnaRoutes from './routes/dnaRoutes.js';
+import friendsRoutes from './routes/friendsRoutes.js';
 
 dotenv.config();
 
@@ -46,6 +47,7 @@ app.use('/api/discovery', discoveryRoutes);
 app.use('/api/recommendations', recRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/movie-dna', dnaRoutes);
+app.use('/api/friends', friendsRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

@@ -1,4 +1,5 @@
-import { ALL_MEDIA } from '../data/curatedMedia.js';
+import { ALL_MEDIA, FREE_STREAMS } from '../data/curatedMedia.js';
+import { STREAM_CHANNELS } from '../data/freeStreams.js';
 import { UNIVERSES } from '../config/constants.js';
 import { tmdbService } from '../services/tmdbService.js';
 import { getRecommendations } from '../services/recommendationService.js';
@@ -130,6 +131,126 @@ export const movieController = {
       }
 
       res.json({ success: true, total: results.length, results });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  async getStreams(req, res) {
+    try {
+      const { channel, q } = req.query;
+      let streams = [...FREE_STREAMS];
+
+      if (channel && channel !== 'all') {
+        streams = streams.filter(s => s.channel === channel);
+      }
+
+      if (q && q.trim()) {
+        const query = q.toLowerCase().trim();
+        streams = streams.filter(s =>
+          s.title.toLowerCase().includes(query) ||
+          (s.director && s.director.toLowerCase().includes(query)) ||
+          (s.genres && s.genres.some(g => g.toLowerCase().includes(query)))
+        );
+      }
+
+      // Group by channels for the Cinema Lounge
+      const groupedChannels = STREAM_CHANNELS.filter(c => c.id !== 'all').map(ch => ({
+        ...ch,
+        items: FREE_STREAMS.filter(s => s.channel === ch.id)
+      }));
+
+      res.json({
+        success: true,
+        total: streams.length,
+        channels: STREAM_CHANNELS,
+        groupedChannels,
+        streams,
+        featuredStream: FREE_STREAMS[0]
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  async getStreamDetails(req, res) {
+    try {
+      const { id } = req.params;
+      const mediaId = String(id);
+
+      // Check if it's in free streams
+      const freeItem = FREE_STREAMS.find(s => String(s.id) === mediaId);
+
+      if (freeItem) {
+        // Construct rich source options
+        const sources = [];
+        if (freeItem.stream_url) {
+          sources.push({
+            label: "High-Speed Direct HTML5 Stream",
+            type: freeItem.stream_type || "mp4",
+            url: freeItem.stream_url,
+            quality: freeItem.stream_quality || "1080p Full HD"
+          });
+        }
+        if (freeItem.youtube_id) {
+          sources.push({
+            label: "Official YouTube Stream",
+            type: "youtube",
+            url: `https://www.youtube.com/embed/${freeItem.youtube_id}?autoplay=1&rel=0&modestbranding=1`,
+            quality: "1080p Full HD"
+          });
+        }
+        if (freeItem.archive_embed) {
+          sources.push({
+            label: "Archive.org Historical Master",
+            type: "archive",
+            url: freeItem.archive_embed,
+            quality: "Original Archive Scan"
+          });
+        }
+
+        const related = FREE_STREAMS.filter(s => String(s.id) !== mediaId).slice(0, 6);
+
+        return res.json({
+          success: true,
+          data: {
+            ...freeItem,
+            is_free_stream: true,
+            sources,
+            relatedStreams: related
+          }
+        });
+      }
+
+      // If not in FREE_STREAMS, fetch from tmdb/curated media as trailer preview stream
+      const generalDetails = await tmdbService.getDetails(id, req.query.type || 'movie');
+      if (generalDetails) {
+        const sources = [];
+        if (generalDetails.trailer_key) {
+          sources.push({
+            label: "Official Studio HD Preview / Trailer",
+            type: "youtube",
+            url: `https://www.youtube.com/embed/${generalDetails.trailer_key}?autoplay=1&rel=0&modestbranding=1`,
+            quality: "1080p Full HD"
+          });
+        }
+
+        const related = FREE_STREAMS.slice(0, 6);
+
+        return res.json({
+          success: true,
+          data: {
+            ...generalDetails,
+            is_free_stream: false,
+            license: "Theatrical Copyright (Official Preview Player Available)",
+            stream_quality: "1080p Official Preview",
+            sources,
+            relatedStreams: related
+          }
+        });
+      }
+
+      res.status(404).json({ success: false, message: 'Stream not found' });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
     }
