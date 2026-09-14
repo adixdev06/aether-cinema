@@ -52,6 +52,24 @@ export function AuthProvider({ children }) {
     return { success: false, message: res.data.message };
   };
 
+  const loginWithGoogle = async (googlePayload = {}) => {
+    const defaultPayload = {
+      email: googlePayload.email || 'cinematic.critic@gmail.com',
+      name: googlePayload.name || 'Aditya Singh',
+      avatar: googlePayload.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+      googleId: googlePayload.googleId || `google_${Date.now()}`
+    };
+
+    const res = await api.post('/auth/google', defaultPayload);
+    if (res.data.success) {
+      localStorage.setItem('aether_token', res.data.token);
+      setUser(res.data.user);
+      setAuthModalOpen(false);
+      return { success: true };
+    }
+    return { success: false, message: res.data.message };
+  };
+
   const logout = () => {
     localStorage.removeItem('aether_token');
     setUser({
@@ -69,6 +87,7 @@ export function AuthProvider({ children }) {
       setAuthModalOpen,
       login,
       register,
+      loginWithGoogle,
       logout,
       fetchUserProfile
     }}>

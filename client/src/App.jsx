@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import CommandSearch from './components/common/CommandSearch';
@@ -10,10 +10,13 @@ import AuthPage from './pages/AuthPage';
 import HomePage from './pages/HomePage';
 import ExplorePage from './pages/ExplorePage';
 import DetailPage from './pages/DetailPage';
+import CinemaLoungePage from './pages/CinemaLoungePage';
+import WatchPage from './pages/WatchPage';
 import UniversePage from './pages/UniversePage';
 import MoodPage from './pages/MoodPage';
 import LibraryPage from './pages/LibraryPage';
 import MovieDnaPage from './pages/MovieDnaPage';
+import FriendsPage from './pages/FriendsPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 import { AudioProvider } from './context/AudioContext';
@@ -21,6 +24,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { LibraryProvider } from './context/LibraryContext';
 
 function AppContent() {
+  const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [surpriseOpen, setSurpriseOpen] = useState(false);
   const { authModalOpen, setAuthModalOpen } = useAuth();
@@ -36,6 +40,8 @@ function AppContent() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [searchOpen]);
+
+  const isUniverse = location.pathname === '/universe';
 
   return (
     <div className="relative min-h-screen flex flex-col justify-between bg-noir-950 text-slate-100 selection:bg-gold-500/30 selection:text-gold-300">
@@ -61,9 +67,12 @@ function AppContent() {
               />
             }
           />
+          <Route path="/stream" element={<CinemaLoungePage />} />
+          <Route path="/watch/:id" element={<WatchPage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/moods" element={<MoodPage />} />
           <Route path="/universe" element={<UniversePage />} />
+          <Route path="/friends" element={<FriendsPage />} />
           <Route path="/library" element={<LibraryPage />} />
           <Route path="/movie-dna" element={<MovieDnaPage />} />
           <Route path="/media/:type/:id" element={<DetailPage />} />
@@ -73,7 +82,7 @@ function AppContent() {
       </main>
 
       {/* Global Footer */}
-      <Footer />
+      {!isUniverse && <Footer />}
 
       {/* Global Modals & Notifications */}
       <CommandSearch

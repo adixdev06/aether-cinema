@@ -23,9 +23,11 @@ export default function Navbar({ onOpenSearch, onOpenAuth }) {
 
   const navLinks = [
     { name: 'Home', path: '/' },
+    { name: 'Watch Free', path: '/stream', badge: 'FREE' },
     { name: 'Explore', path: '/explore' },
     { name: 'Moods', path: '/moods' },
     { name: 'Universe', path: '/universe' },
+    { name: 'Friends', path: '/friends' },
     { name: 'My Library', path: '/library', badge: (watchedList.length + watchlist.length) || null },
     { name: 'Movie DNA', path: '/movie-dna' }
   ];

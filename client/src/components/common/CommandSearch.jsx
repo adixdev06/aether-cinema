@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Film, Tv, Star, User, ArrowRight } from 'lucide-react';
+import { Search, X, Film, Tv, Star, User, ArrowRight, ArrowLeft } from 'lucide-react';
 import api from '../../api/client';
 import { useAudio } from '../../context/AudioContext';
 import { handleImageError } from '../../utils/imageFallback';
@@ -20,7 +20,6 @@ export default function CommandSearch({ isOpen, onClose }) {
     const handleKeyDown = (e) => {
       if (e.key === '/' && !isOpen && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
         e.preventDefault();
-        // open is handled by parent, but let's check
       }
       if (e.key === 'Escape' && isOpen) {
         onClose();
@@ -51,7 +50,7 @@ export default function CommandSearch({ isOpen, onClose }) {
       try {
         const res = await api.get(`/movies/search?q=${encodeURIComponent(query)}`);
         if (res.data.success) {
-          setResults(res.data.results.slice(0, 8));
+          setResults(res.data.results.slice(0, 10));
           setSelectedIndex(0);
         }
       } catch (err) {
@@ -91,17 +90,33 @@ export default function CommandSearch({ isOpen, onClose }) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-noir-950/80 backdrop-blur-xl">
+      <div 
+        className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-noir-950/85 backdrop-blur-xl"
+        onClick={onClose}
+      >
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: -10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: -10 }}
           transition={{ duration: 0.18 }}
-          className="w-full max-w-2xl bg-noir-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden glass-panel-elevated"
+          className="w-full max-w-2xl bg-noir-900 border border-white/15 rounded-2xl shadow-2xl overflow-hidden glass-panel-elevated"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Search Input Bar */}
+          {/* Search Input Bar with Back Button */}
           <div className="flex items-center px-4 py-3.5 border-b border-white/10 gap-3">
+            {/* Back Button */}
+            <button
+              onClick={() => {
+                playClick();
+                onClose();
+              }}
+              className="p-1.5 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold border border-white/10 shrink-0"
+              title="Close Search (Esc)"
+            >
+              <ArrowLeft className="w-4 h-4 text-gold-400" />
+              <span className="hidden sm:inline">Back</span>
+            </button>
+
             <Search className="w-5 h-5 text-gold-400 shrink-0" />
             <input
               ref={inputRef}
@@ -202,7 +217,7 @@ export default function CommandSearch({ isOpen, onClose }) {
               )
             ) : (
               <div className="p-6 text-center text-xs text-slate-400 space-y-2">
-                <p>Quick suggestions: <span className="text-gold-400 cursor-pointer" onClick={() => setQuery('Nolan')}>Nolan</span> • <span className="text-gold-400 cursor-pointer" onClick={() => setQuery('Sci-Fi')}>Sci-Fi</span> • <span className="text-gold-400 cursor-pointer" onClick={() => setQuery('Severance')}>Severance</span> • <span className="text-gold-400 cursor-pointer" onClick={() => setQuery('Mind-Bending')}>Mind-Bending</span></p>
+                <p>Quick suggestions: <span className="text-gold-400 cursor-pointer" onClick={() => setQuery('Batman')}>Batman</span> • <span className="text-gold-400 cursor-pointer" onClick={() => setQuery('Nolan')}>Nolan</span> • <span className="text-gold-400 cursor-pointer" onClick={() => setQuery('Sci-Fi')}>Sci-Fi</span> • <span className="text-gold-400 cursor-pointer" onClick={() => setQuery('Dark')}>Dark</span></p>
               </div>
             )}
           </div>

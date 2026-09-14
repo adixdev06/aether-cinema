@@ -14,6 +14,7 @@ import SeasonsGuide from '../components/media/SeasonsGuide';
 import SimilarityGrid from '../components/media/SimilarityGrid';
 import TrailerModal from '../components/common/TrailerModal';
 import RatingModal from '../components/common/RatingModal';
+import CinemaPlayerModal from '../components/player/CinemaPlayerModal';
 import { HeroSkeleton } from '../components/common/Skeleton';
 
 export default function DetailPage() {
@@ -21,6 +22,7 @@ export default function DetailPage() {
   const [media, setMedia] = useState(null);
   const [loading, setLoading] = useState(true);
   const [trailerOpen, setTrailerOpen] = useState(false);
+  const [cinemaModalOpen, setCinemaModalOpen] = useState(false);
   const [ratingModalOpen, setRatingModalOpen] = useState(false);
 
   const { playClick, playChime } = useAudio();
@@ -93,29 +95,45 @@ export default function DetailPage() {
               onError={(e) => handleImageError(e, media.title || media.name, media.genres ? media.genres[0] : 'Cinema')}
               className="w-full h-full object-cover"
             />
-            {media.trailer_key && (
-              <button
-                onClick={() => {
-                  playClick();
+            {/* Poster Overlay Button */}
+            <button
+              onClick={() => {
+                playClick();
+                if (media.is_free_stream || media.stream_url) {
+                  setCinemaModalOpen(true);
+                } else if (media.trailer_key) {
                   setTrailerOpen(true);
-                }}
-                className="absolute inset-0 bg-noir-950/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-2 text-white transition-opacity duration-300 backdrop-blur-sm"
-              >
-                <div className="w-12 h-12 rounded-full bg-gold-500 text-noir-950 flex items-center justify-center shadow-lg">
-                  <Play className="w-5 h-5 fill-current ml-0.5" />
-                </div>
-                <span className="font-display font-bold text-xs uppercase tracking-wider">Play Trailer</span>
-              </button>
-            )}
+                }
+              }}
+              className="absolute inset-0 bg-noir-950/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-2 text-white transition-opacity duration-300 backdrop-blur-sm"
+            >
+              <div className="w-12 h-12 rounded-full bg-gold-500 text-noir-950 flex items-center justify-center shadow-lg">
+                <Play className="w-5 h-5 fill-current ml-0.5" />
+              </div>
+              <span className="font-display font-bold text-xs uppercase tracking-wider">
+                {media.is_free_stream ? 'Stream Full Movie' : 'Play Preview'}
+              </span>
+            </button>
           </div>
 
           {/* Core Info */}
           <div className="flex-1 space-y-4 max-w-3xl">
             {/* Format & Tags Strip */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-gold-500/20 text-gold-400 border border-gold-500/30">
-                {isTv ? 'TV Series' : 'Feature Film'}
-              </span>
+              {media.is_free_stream ? (
+                <span className="px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-gold-500 text-noir-950 shadow-md">
+                  ★ 100% Free Full Movie
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-gold-500/20 text-gold-400 border border-gold-500/30">
+                  {isTv ? 'TV Series' : 'Feature Film'}
+                </span>
+              )}
+              {media.license && (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono">
+                  {media.license}
+                </span>
+              )}
               {media.genres?.map((g) => (
                 <span key={g} className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/5 text-slate-300 border border-white/10">
                   {g}
@@ -156,17 +174,40 @@ export default function DetailPage() {
 
             {/* Action Bar */}
             <div className="flex flex-wrap items-center gap-3 pt-3">
-              {/* Watch Trailer */}
+              {/* Primary Stream CTA: Link to full WatchPage or open modal */}
+              {media.is_free_stream ? (
+                <Link
+                  to={`/watch/${media.id}`}
+                  onClick={playClick}
+                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-noir-950 font-display font-bold text-xs uppercase tracking-wider transition-all shadow-xl shadow-gold-500/25 flex items-center gap-2"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>Stream Full Movie (Free)</span>
+                </Link>
+              ) : (
+                <button
+                  onClick={() => {
+                    playClick();
+                    setCinemaModalOpen(true);
+                  }}
+                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-noir-950 font-display font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-gold-500/20 flex items-center gap-2"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>Stream HD Preview</span>
+                </button>
+              )}
+
+              {/* Watch Trailer Secondary if trailer available */}
               {media.trailer_key && (
                 <button
                   onClick={() => {
                     playClick();
                     setTrailerOpen(true);
                   }}
-                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-noir-950 font-display font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-gold-500/20 flex items-center gap-2"
+                  className="px-4 py-3 rounded-2xl bg-noir-900/80 hover:bg-noir-850 text-slate-200 border border-white/10 font-semibold text-xs flex items-center gap-2"
                 >
-                  <Play className="w-4 h-4 fill-current" />
-                  <span>Watch Trailer</span>
+                  <Film className="w-4 h-4 text-gold-400" />
+                  <span>Trailer</span>
                 </button>
               )}
 
@@ -309,6 +350,12 @@ export default function DetailPage() {
       </div>
 
       {/* Modals */}
+      <CinemaPlayerModal
+        isOpen={cinemaModalOpen}
+        onClose={() => setCinemaModalOpen(false)}
+        media={media}
+      />
+
       <TrailerModal
         isOpen={trailerOpen}
         onClose={() => setTrailerOpen(false)}

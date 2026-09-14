@@ -45,15 +45,20 @@ export default function MediaCard({ media, showMatch = true, priority = false })
         {/* Ambient Dark Gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-noir-950 via-noir-950/20 to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
 
-        {/* Match Percentage Badge */}
-        {showMatch && media.matchScore && (
-          <div className="absolute top-2.5 left-2.5 z-10">
+        {/* Match / Free Stream Badge */}
+        <div className="absolute top-2.5 left-2.5 z-10 flex flex-col gap-1">
+          {media.is_free_stream ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider bg-gold-500 text-noir-950 shadow-lg shadow-gold-500/30">
+              <Play className="w-2.5 h-2.5 fill-current" />
+              FREE STREAM
+            </span>
+          ) : showMatch && media.matchScore ? (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider bg-noir-950/90 text-gold-400 border border-gold-500/30 backdrop-blur-md shadow-lg">
               <Sparkles className="w-2.5 h-2.5" />
               {media.matchScore}% MATCH
             </span>
-          </div>
-        )}
+          ) : null}
+        </div>
 
         {/* Format / Watched Indicator */}
         <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1">
@@ -107,6 +112,20 @@ export default function MediaCard({ media, showMatch = true, priority = false })
             >
               <Check className="w-3.5 h-3.5 stroke-[2.5]" />
             </button>
+            {/* Stream Play Button if free stream */}
+            {media.is_free_stream && (
+              <Link
+                to={`/watch/${media.id}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  playClick();
+                }}
+                className="p-2 rounded-full bg-gold-500 hover:bg-gold-400 text-noir-950 shadow-lg shadow-gold-500/30 transition-all"
+                title="Stream Full Movie (Free)"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+              </Link>
+            )}
           </div>
 
           {/* Why Badge popover */}
